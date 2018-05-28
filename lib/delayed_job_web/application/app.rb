@@ -38,7 +38,7 @@ class DelayedJobWeb < Sinatra::Base
   end
 
   def per_page
-    20
+    500
   end
 
   def url_path(*path_parts)
