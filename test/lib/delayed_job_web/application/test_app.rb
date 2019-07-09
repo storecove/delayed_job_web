@@ -35,7 +35,7 @@ class TestDelayedJobWeb < MiniTest::Unit::TestCase
 
     dataset = Minitest::Mock.new
     where = lambda { | criteria |
-      criteria.must_equal 'last_error IS NOT NULL'
+      criteria.must_equal :attempts => 0, :locked_at => nil
       dataset
     }
 
@@ -43,11 +43,32 @@ class TestDelayedJobWeb < MiniTest::Unit::TestCase
 
     Time.stub(:now, time) do
       Delayed::Job.stub(:where, where) do
-        post "/requeue/failed", request_data, rack_env
+        post "/requeue/pending", request_data, rack_env
         last_response.status.must_equal 302
       end
     end
 
+    dataset.verify
+
+  end
+
+  def test_requeue_pending_with_requeue_pending_disallowed
+
+    app.set(:allow_requeue_pending, false)
+
+    dataset = Minitest::Mock.new
+    where = lambda { |criteria|
+      dataset
+    }
+
+    Time.stub(:now, time) do
+      Delayed::Job.stub(:where, where) do
+        post "/requeue/pending", request_data, rack_env
+        last_response.status.must_equal 302
+      end
+    end
+
+    # Expect dataset to not have received any method calls.
     dataset.verify
 
   end
